@@ -6,6 +6,41 @@ TEAM_SIZE_LIMIT = 5
 # Number of teams to make per section
 SECTION_TEAM_COUNT = 5
 
+# A Student
+class Student:
+    def __init__(self, response):
+        self.name = response['What\'s your name?']
+        self.timezone = response['# UTC OFFSET']
+        self.language = response['# LANGUAGE']
+        self.roles = [response['# ROLE 1'], response['# ROLE 2'], response['# ROLE 3']]
+
+    def __str__(self):
+        return self.name + ' (' + str(self.timezone) + ', ' + self.language + ', ' + str(self.roles) + ')'
+
+# A Group
+class Group:
+    def __init__(self, name):
+        self.name = name
+        self.students = []
+
+    def add(self, student):
+        self.students.append(student)
+
+    def get_roles(self):
+        return [student.roles for student in self.students]
+
+    def get_languages(self):
+        return [student.language for student in self.students]
+
+    def get_mean_timezone(self):
+        return sum([student.timezone for student in self.students]) / len(self.students)
+
+    def size(self):
+        return len(self.students)
+
+    def __str__(self):
+        return 'Group ' + str(self.name) + ': ' + str([student.name for student in self.students])
+
 # Standardizes a timezone response (ex: PST, Pacific Standard, Seattle) to UTC format (0-24)
 def to_utc(timezone):
     timezone = timezone.upper()
@@ -149,6 +184,56 @@ def preprocess(responses):
     ## Role Extraction
     extract_roles(responses)
 
+# Creates groups of students for a section
+def create_section_groups(section, students):
+    groups = []
+    # Create groups
+    for i in range(SECTION_TEAM_COUNT):
+        groups.append(Group(str(section) + '-' + str(i + 1)))
+
+    # For each student
+    for i in range(len(students)):
+        student = Student(students.iloc[i])
+        # print('Finding group for ' + student.name)
+        
+        # Find a group
+        added = False
+        for group in groups:
+            # If group is full, skip
+            if group.size() >= TEAM_SIZE_LIMIT:
+                continue
+
+            # For each role
+            for role in student.roles:
+                # If this group is missing this student's role
+                if role not in group.get_roles():
+                    # Add the student to the group
+                    group.add(student)
+                    # print('Added ' + student.name + ' to ' + group.name)
+
+                    # Break out of the role loop
+                    added = True
+                    break
+
+            # If the student was added to a group
+            if added:
+                break
+            # If the student was not added to a group, add them to the first group that isn't full
+            else:
+                for group in groups:
+                    if group.size() < TEAM_SIZE_LIMIT:
+                        group.add(student)
+                        break
+
+    # Create a Dataframe from the groups
+    df = pd.DataFrame(columns=['# TEAM', '# STUDENT', '# ROLE 1', '# ROLE 2', '# ROLE 3'])
+    for i in range(len(groups)):
+        group = groups[i]
+        for j in range(len(group.students)):
+            student = group.students[j]
+            df.loc[i * TEAM_SIZE_LIMIT + j] = [group.name, student.name, student.roles[0], student.roles[1], student.roles[2]]
+    return df
+
 # Creates groups from a pre-processed response dataframe
 def create_groups(responses):
     # Dataframe to store groups
@@ -159,13 +244,14 @@ def create_groups(responses):
 
     # For each section
     for section in sections:
-        # Get all students in section
+        # Get the students in this section
         students = responses[responses['I am in section'] == section]
 
-        # Temp: Add all students to the section's column
-        for i in range(len(students)):
-            student = students.iloc[i]
-            groups.at[i, str(section) + '-1'] = student['What\'s your name?']
+        # Create groups for this section
+        section_groups = create_section_groups(section, students)
+
+        # Add section groups to groups
+        groups = pd.concat([section_groups, groups], axis=1)
 
     # Return groups
     return groups
