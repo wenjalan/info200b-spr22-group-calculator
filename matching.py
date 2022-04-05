@@ -1,6 +1,12 @@
 import pandas as pd
 
-# Standardizes a timezone string (ex: PST) to UTC format (0-24)
+# Maximum number of members to a team
+TEAM_SIZE_LIMIT = 5
+
+# Number of teams to make per section
+SECTION_TEAM_COUNT = 5
+
+# Standardizes a timezone response (ex: PST, Pacific Standard, Seattle) to UTC format (0-24)
 def to_utc(timezone):
     timezone = timezone.upper()
 
@@ -21,7 +27,7 @@ def to_utc(timezone):
         return '6'
     elif timezone == 'MST':
         return '7'
-    elif timezone == 'PST' or timezone == 'PDT' or timezone == 'PT' or 'PACIFIC' in timezone:
+    elif timezone == 'PST' or timezone == 'PDT' or timezone == 'PT' or 'PACIFIC' in timezone or 'SEATTLE' in timezone:
         return '8'
     elif timezone == 'AKST':
         return '9'
@@ -41,7 +47,7 @@ def to_utc(timezone):
         return '16'
     elif timezone == 'JST':
         return '17'
-    elif timezone == 'GMT':
+    elif timezone == 'GMT' or 'CHINA' in timezone or 'SHANGHAI' in timezone or 'BEIJING' in timezone:
         return '18'
     elif timezone == 'BST':
         return '19'
@@ -59,9 +65,7 @@ def to_utc(timezone):
         return timezone
 
 # Flattens a language response
-# Ex: mandarin -> CHINESE
-# Ex: English -> ENGLISH
-# Ex: Chinese -> CHINESE
+# Ex: Mandarin -> CHINESE (the horror)
 def lang_flatten(language):
     language = language.upper()
     if 'CHINESE' in language:
@@ -133,7 +137,6 @@ def extract_roles(responses):
         elif (student['What roles interest you? [Quality and DEI Officer]'] == 'Third Choice'):
             responses.at[i, '# ROLE 3'] = 'Quality and DEI Officer'
 
-
 # Performs preprocessing on raw data
 def preprocess(responses):
     # Data Cleaning
@@ -141,12 +144,31 @@ def preprocess(responses):
     responses['# UTC OFFSET'] = responses['What timezone are you in?'].apply(to_utc)
 
     ## Language Flattening
-    # For the purposes of group formation, Mandarin == Chinese
     responses['# LANGUAGE'] = responses['What is your native language? (you may list more than one, or if multiple, a preferred language)'].apply(lang_flatten)
 
     ## Role Extraction
     extract_roles(responses)
 
+# Creates groups from a pre-processed response dataframe
+def create_groups(responses):
+    # Dataframe to store groups
+    groups = pd.DataFrame()
+
+    # Get a list of all sections
+    sections = responses['I am in section'].unique()
+
+    # For each section
+    for section in sections:
+        # Get all students in section
+        students = responses[responses['I am in section'] == section]
+
+        # Temp: Add all students to the section's column
+        for i in range(len(students)):
+            student = students.iloc[i]
+            groups.at[i, str(section) + '-1'] = student['What\'s your name?']
+
+    # Return groups
+    return groups
 
 # Read responses from .csv file
 responses = pd.read_csv('responses.csv')
@@ -154,6 +176,9 @@ responses = pd.read_csv('responses.csv')
 # Preprocess responses
 preprocess(responses)
 
+# Form groups
+groups = create_groups(responses)
+groups.to_csv('groups.csv', index=False)
+
 # Export to .csv file
 responses.to_csv('responses_new.csv', index=False)
-
