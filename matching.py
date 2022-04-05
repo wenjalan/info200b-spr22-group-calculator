@@ -83,16 +83,76 @@ def lang_flatten(language):
     else:
         return language
 
+# Extracts roles from responses
+def extract_roles(responses):
+    # New column for roles
+    responses['# ROLE 1'] = None
+    responses['# ROLE 2'] = None
+    responses['# ROLE 3'] = None
+
+    # Extract roles from responses
+    for i in range(len(responses)):
+        student = responses.iloc[i]
+        # Project Manager
+        if (student['What roles interest you? [Project Manager]'] == 'First Choice'):
+            responses.at[i, '# ROLE 1'] = 'Project Manager'
+        elif (student['What roles interest you? [Project Manager]'] == 'Second Choice'):
+            responses.at[i, '# ROLE 2'] = 'Project Manager'
+        elif (student['What roles interest you? [Project Manager]'] == 'Third Choice'):
+            responses.at[i, '# ROLE 3'] = 'Project Manager'
+
+        # UI/UX Designer
+        if (student['What roles interest you? [UI/UX Designer]'] == 'First Choice'):
+            responses.at[i, '# ROLE 1'] = 'UI/UX Designer'
+        elif (student['What roles interest you? [UI/UX Designer]'] == 'Second Choice'):
+            responses.at[i, '# ROLE 2'] = 'UI/UX Designer'
+        elif (student['What roles interest you? [UI/UX Designer]'] == 'Third Choice'):
+            responses.at[i, '# ROLE 3'] = 'UI/UX Designer'
+
+        # Backend Developer
+        if (student['What roles interest you? [Backend Developer]'] == 'First Choice'):
+            responses.at[i, '# ROLE 1'] = 'Backend Developer'
+        elif (student['What roles interest you? [Backend Developer]'] == 'Second Choice'):
+            responses.at[i, '# ROLE 2'] = 'Backend Developer'
+        elif (student['What roles interest you? [Backend Developer]'] == 'Third Choice'):
+            responses.at[i, '# ROLE 3'] = 'Backend Developer'
+
+        # Public Relations and Marketing Rep
+        if (student['What roles interest you? [Public Relations and Marketing Rep]'] == 'First Choice'):
+            responses.at[i, '# ROLE 1'] = 'Public Relations and Marketing Rep'
+        elif (student['What roles interest you? [Public Relations and Marketing Rep]'] == 'Second Choice'):
+            responses.at[i, '# ROLE 2'] = 'Public Relations and Marketing Rep'
+        elif (student['What roles interest you? [Public Relations and Marketing Rep]'] == 'Third Choice'):
+            responses.at[i, '# ROLE 3'] = 'Public Relations and Marketing Rep'
+
+        # Quality and DEI Officer
+        if (student['What roles interest you? [Quality and DEI Officer]'] == 'First Choice'):
+            responses.at[i, '# ROLE 1'] = 'Quality and DEI Officer'
+        elif (student['What roles interest you? [Quality and DEI Officer]'] == 'Second Choice'):
+            responses.at[i, '# ROLE 2'] = 'Quality and DEI Officer'
+        elif (student['What roles interest you? [Quality and DEI Officer]'] == 'Third Choice'):
+            responses.at[i, '# ROLE 3'] = 'Quality and DEI Officer'
+
+
+# Performs preprocessing on raw data
+def preprocess(responses):
+    # Data Cleaning
+    ## Timezone Standardization
+    responses['# UTC OFFSET'] = responses['What timezone are you in?'].apply(to_utc)
+
+    ## Language Flattening
+    # For the purposes of group formation, Mandarin == Chinese
+    responses['# LANGUAGE'] = responses['What is your native language? (you may list more than one, or if multiple, a preferred language)'].apply(lang_flatten)
+
+    ## Role Extraction
+    extract_roles(responses)
+
+
 # Read responses from .csv file
 responses = pd.read_csv('responses.csv')
 
-# Data Cleaning
-## Timezone Standardization
-responses['# UTC OFFSET'] = responses['What timezone are you in?'].apply(to_utc)
-
-## Language Flattening
-# For the purposes of group formation, Mandarin == Chinese
-responses['# LANGUAGE'] = responses['What is your native language? (you may list more than one, or if multiple, a preferred language)'].apply(lang_flatten)
+# Preprocess responses
+preprocess(responses)
 
 # Export to .csv file
 responses.to_csv('responses_new.csv', index=False)
