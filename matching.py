@@ -66,7 +66,7 @@ def to_utc(timezone):
         return '6'
     elif timezone == 'MST':
         return '7'
-    elif timezone == 'PST' or timezone == 'PDT' or timezone == 'PT' or timezone == 'PCT' or 'PACIFIC' in timezone or 'SEATTLE' in timezone or 'CALIFORNIA' in timezone:
+    elif timezone == 'PST' or timezone == 'PDT' or timezone == 'PT' or timezone == 'PCT' or 'PACIFIC' in timezone or 'SEATTLE' in timezone or 'CALIFORNIA' in timezone or 'CUPERTINO' in timezone:
         return '8'
     elif timezone == 'AKST':
         return '9'
@@ -101,7 +101,7 @@ def to_utc(timezone):
     elif timezone == 'JST':
         return '24'
     else:
-        return timezone
+        return '-1'
 
 # Flattens a language response
 # Ex: Mandarin -> CHINESE (the horror)
@@ -237,9 +237,9 @@ def create_section_groups(section, students):
                 added = True
                 break
 
-            # If no matches were found, add to the first group that isn't full
+            # If no matches were found, add to the first group with size < TEAM_SIZE_LIMIT
             if len(matches) == 0:
-                for group in role_matches:
+                for group in groups:
                     if group.size() < TEAM_SIZE_LIMIT:
                         group.add(student)
                         added = True
@@ -252,6 +252,9 @@ def create_section_groups(section, students):
         for j in range(len(group.students)):
             student = group.students[j]
             df.loc[i * TEAM_SIZE_LIMIT + j] = [group.name, student.name, student.language, student.timezone, student.roles[0], student.roles[1], student.roles[2]]
+        # Add blank rows to fill out the rest of the group
+        for j in range(TEAM_SIZE_LIMIT - len(group.students)):
+            df.loc[i * TEAM_SIZE_LIMIT + len(group.students) + j] = [group.name, '', '', '', '', '', '']
     return df
 
 # Creates groups from a pre-processed response dataframe
