@@ -33,7 +33,11 @@ class Group:
         return [student.language for student in self.students]
 
     def get_mean_timezone(self):
-        return sum([student.timezone for student in self.students]) / len(self.students)
+        # If no students, return negative infinity
+        if self.size() == 0:
+            return float('inf')
+        else:
+            return sum([float(student.timezone) for student in self.students]) / len(self.students)
 
     def size(self):
         return len(self.students)
@@ -223,8 +227,12 @@ def create_section_groups(section, students):
                 if student.language not in match.get_languages():
                     matches.remove(match)
 
-            # Add the student to first matched group
+            # Add the student to group with the closest average timezone to the student
             if len(matches) > 0:
+                # Sort matches by timezone difference to student
+                matches.sort(key=lambda x: abs(x.get_mean_timezone() - float(student.timezone)))
+
+                # Add student to group
                 matches[0].add(student)
                 added = True
                 break
