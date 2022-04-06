@@ -62,7 +62,7 @@ def to_utc(timezone):
         return '6'
     elif timezone == 'MST':
         return '7'
-    elif timezone == 'PST' or timezone == 'PDT' or timezone == 'PT' or 'PACIFIC' in timezone or 'SEATTLE' in timezone:
+    elif timezone == 'PST' or timezone == 'PDT' or timezone == 'PT' or timezone == 'PCT' or 'PACIFIC' in timezone or 'SEATTLE' in timezone or 'CALIFORNIA' in timezone:
         return '8'
     elif timezone == 'AKST':
         return '9'
@@ -194,44 +194,56 @@ def create_section_groups(section, students):
     # For each student
     for i in range(len(students)):
         student = Student(students.iloc[i])
-        # print('Finding group for ' + student.name)
-        
-        # Find a group
+        # While the student isn't in a group
+        matches = []
         added = False
-        for group in groups:
-            # If group is full, skip
-            if group.size() >= TEAM_SIZE_LIMIT:
-                continue
-
-            # For each role
-            for role in student.roles:
-                # If this group is missing this student's role
-                if role not in group.get_roles():
-                    # Add the student to the group
-                    group.add(student)
-                    # print('Added ' + student.name + ' to ' + group.name)
-
-                    # Break out of the role loop
-                    added = True
-                    break
-
-            # If the student was added to a group
+        seek_role = 0
+        for role in student.roles:
+            # If we added the student to a group, break
             if added:
                 break
-            # If the student was not added to a group, add them to the first group that isn't full
-            else:
-                for group in groups:
+
+            # For each group
+            for group in groups:
+                # If the group is full, skip
+                if group.size() >= TEAM_SIZE_LIMIT:
+                    continue
+
+                # If the group doesn't contain the role
+                if role not in group.get_roles():
+                    # Add to matches
+                    matches.append(group)
+
+            # Save role matches
+            role_matches = matches
+
+            # For each match
+            for match in matches:
+                # If the match doesn't contain the student's desired language, remove it
+                if student.language not in match.get_languages():
+                    matches.remove(match)
+
+            # Add the student to first matched group
+            if len(matches) > 0:
+                matches[0].add(student)
+                added = True
+                break
+
+            # If no matches were found, add to the first group that isn't full
+            if len(matches) == 0:
+                for group in role_matches:
                     if group.size() < TEAM_SIZE_LIMIT:
                         group.add(student)
+                        added = True
                         break
 
     # Create a Dataframe from the groups
-    df = pd.DataFrame(columns=['# TEAM', '# STUDENT', '# ROLE 1', '# ROLE 2', '# ROLE 3'])
+    df = pd.DataFrame(columns=['# TEAM', '# STUDENT', '# LANGUAGE', '# TIMEZONE', '# ROLE 1', '# ROLE 2', '# ROLE 3'])
     for i in range(len(groups)):
         group = groups[i]
         for j in range(len(group.students)):
             student = group.students[j]
-            df.loc[i * TEAM_SIZE_LIMIT + j] = [group.name, student.name, student.roles[0], student.roles[1], student.roles[2]]
+            df.loc[i * TEAM_SIZE_LIMIT + j] = [group.name, student.name, student.language, student.timezone, student.roles[0], student.roles[1], student.roles[2]]
     return df
 
 # Creates groups from a pre-processed response dataframe
@@ -251,7 +263,7 @@ def create_groups(responses):
         section_groups = create_section_groups(section, students)
 
         # Add section groups to groups
-        groups = pd.concat([section_groups, groups], axis=1)
+        groups = pd.concat([section_groups, groups], axis=0)
 
     # Return groups
     return groups
