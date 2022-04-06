@@ -1,11 +1,5 @@
 import pandas as pd
 
-# Maximum number of members to a team
-TEAM_SIZE_LIMIT = 5
-
-# Number of teams to make per section
-SECTION_TEAM_COUNT = 5
-
 # A Student
 class Student:
     def __init__(self, response):
@@ -279,15 +273,28 @@ def create_groups(responses):
     # Return groups
     return groups
 
+# Prompt for .csv file
+print('Please enter the name of the .csv file you would like to use:')
+file_name = input()
+
+# Prompt for # of groups per section
+print('Please enter the number of groups per section:')
+SECTION_TEAM_COUNT = int(input())
+
+# Prompt for # of members per group
+print('Please enter the number of members per group:')
+TEAM_SIZE_LIMIT = int(input())
+
 # Read responses from .csv file
-responses = pd.read_csv('responses.csv')
+responses = pd.read_csv(file_name)
 
 # Preprocess responses
 preprocess(responses)
 
+# Export to .csv file
+responses.to_csv('processed_' + file_name, index=False)
+
 # Form groups
 groups = create_groups(responses)
 groups.to_csv('groups.csv', index=False)
-
-# Export to .csv file
-responses.to_csv('responses_new.csv', index=False)
+print('Outputted groups to groups.csv')
