@@ -60,7 +60,7 @@ def to_utc(timezone):
         return '6'
     elif timezone == 'MST':
         return '7'
-    elif timezone == 'PST' or timezone == 'PDT' or timezone == 'PT' or timezone == 'PCT' or 'PACIFIC' in timezone or 'SEATTLE' in timezone or 'CALIFORNIA' in timezone or 'CUPERTINO' in timezone:
+    elif timezone == 'PST' or timezone == 'PDT' or timezone == 'PT' or timezone == 'PCT' or 'PACIFIC' in timezone or 'SEATTLE' in timezone or 'CALIFORNIA' in timezone or 'CUPERTINO' in timezone or 'WA' in timezone or 'PST' in timezone:
         return '8'
     elif timezone == 'AKST':
         return '9'
